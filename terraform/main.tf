@@ -1,3 +1,17 @@
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "5.2.0"
+    }
+  }
+  backend "gcs" {
+    bucket = "terraform-state"
+    prefix = "particle41/state" // Optional: Adjust the prefix as needed
+    credentials = "gcp_credentials.json"
+  }
+}
+
 resource "google_storage_bucket" "terraform_state" {
   name          = var.bucket_name
   location      = var.region

@@ -11,8 +11,8 @@ This guide will walk you through the process of provisioning infrastructure usin
 │   ├── deployment.yaml      # Deploy the application    
 │   ├── service.yaml         # Expose the service          
 ├── terraform/
-│   ├── main.tf              # Defining resources to be created             
-│   ├── provider.tf          # Provider configurations and backend   
+│   ├── main.tf              # Defining resources to be created with backend            
+│   ├── provider.tf          # Provider configurations  
 │   ├── terraform.tfvars     # Define the variable values  
 │   └── variables.tf         # Define the variables       
 ├── app/
@@ -85,7 +85,7 @@ This repository will be used in github actions while pushing the docker image.
 ## 5. Change the code accordingly
 
 * Clone the repository to your local to make the changes
-* In `terraform/terraform.tfvars` edit the values based on your requirements.
+* In `terraform/terraform.tfvars` edit the values based on your requirements .Replace the **project-id** with your project.
 * Commit the changes and push to the main branch.
 
 ## 6. Github Action for deployment
