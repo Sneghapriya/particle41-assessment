@@ -1,0 +1,101 @@
+name: Terraform Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  GKE_CLUSTER:  webapp-cluster
+  GKE_ZONE: us-central1-c  
+  IMAGE: simple-time # image name
+  GAR_ZONE: us-central1 
+  GAR_REPO: artifact      
+
+jobs:
+  terraform:
+    name: Provision Infrastructure with Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+    
+    - name: Configure Google Cloud credentials
+      env:
+        GCP_SECRET: ${{ secrets.GCP_GKE_SECRET }}
+        GCP_PROJECT: ${{ secrets.PROJECT_ID }}
+      run: |
+        echo "$GCP_SECRET" > gcp_credentials.json 
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 0.15.5
+    
+    - name: Terraform Init
+      run: |
+        terraform init
+
+    - name: Terraform Plan
+      run: |
+        terraform plan
+    
+    - name: Terraform Apply
+      run: |
+        terraform apply -auto-approve
+
+
+  gke_deploy:
+    name: Deploy Application to GKE
+    runs-on: ubuntu-latest
+    needs: terraform
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Setup gcloud CLI
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GCP_GKE_SECRET }}'
+
+    # Configure Docker to use the gcloud command-line tool as a credential
+    # helper for authentication
+    - name: Docker configuration
+      run: |-
+        gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://$GAR_ZONE-docker.pkg.dev
+
+    # Get the GKE credentials so we can deploy to the cluster
+    - name: Set up GKE credentials
+      uses: google-github-actions/get-gke-credentials@v0
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_ZONE }}
+
+    # Build the Docker image
+    - name: Build
+      run: |-
+        docker buildx build \
+          --file Dockerfile \
+          --tag "$GAR_ZONE-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$IMAGE:${GITHUB_SHA}" \
+          --build-arg GITHUB_SHA="$GITHUB_SHA" \
+          --build-arg GITHUB_REF="$GITHUB_REF" \
+          ./app
+
+    # Push the Docker image to Google Container Registry
+    - name: Publish
+      run: |-
+        docker push "$GAR_ZONE-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$IMAGE:${GITHUB_SHA}" 
+
+    - name: Update deployment.yaml
+      run: |-       
+        sed -i "s|image:.*|image: $GAR_ZONE-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$IMAGE:${GITHUB_SHA}|g" kubernetes_manifest/deployment.yaml
+
+    # Deploy the Docker image to the GKE cluster
+    - name: Deploy
+      run: |-
+        kubectl apply -f kubernetes_manifest/deployment.yaml
+        kubectl apply -f kubernetes_manifest/service.yaml

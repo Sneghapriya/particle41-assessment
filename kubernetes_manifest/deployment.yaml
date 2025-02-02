@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-time
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple-time
+  template:
+    metadata:
+      labels:
+        app: simple-time
+    spec:
+      containers:
+      - name: simple-time
+        image: 
+        ports:
+        - containerPort: 8080
