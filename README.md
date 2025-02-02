@@ -11,10 +11,11 @@ This guide will walk you through the process of provisioning infrastructure usin
 │   ├── deployment.yaml      # Deploy the application    
 │   ├── service.yaml         # Expose the service          
 ├── terraform/
-│   ├── main.tf              # Defining resources to be created with backend            
+│   ├── main.tf              # Defining resources to be created           
 │   ├── provider.tf          # Provider configurations  
 │   ├── terraform.tfvars     # Define the variable values  
 │   └── variables.tf         # Define the variables       
+│   └── backend.tf           # Backend configurations
 ├── app/
 │   ├── main.py              # Simple time serice application           
 │   ├── requirements.txt     # Required dependencies      
