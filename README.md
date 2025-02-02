@@ -81,6 +81,7 @@ gcloud artifacts repositories create artifact \
   --repository-format=docker \
   --location=us-central1
 ```
+This repository will be used in github actions while pushing the docker image.
 ## 5. Change the code accordingly
 
 * Clone the repository to your local to make the changes
